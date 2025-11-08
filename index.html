@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Navigation App</title>
+  <title>Navigation App - Tap to Route</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
@@ -28,69 +28,48 @@
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       z-index: 1000;
-    }
-    button {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      background-color: #0078ff;
-      color: white;
-      cursor: pointer;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <div id="info">
-    <button id="routeBtn">Route to Hacettepe</button>
-  </div>
+  <div id="info">🗺️ Tap anywhere to set destination</div>
   <div id="map"></div>
 
   <script>
     // Initialize map
     const map = L.map('map').setView([39.8657, 32.7339], 14);
 
-    // Add OpenStreetMap base layer
+    // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    // Destination: Hacettepe University Beytepe
-    const destination = [39.8657, 32.7339];
-    const destMarker = L.marker(destination)
-      .addTo(map)
-      .bindPopup("Destination: Hacettepe University");
+    let userMarker, destMarker, routingControl;
 
-    let routingControl;
-    let userMarker;
-
-    // ✅ Automatically show user's location on map when loaded
+    // Function to show user position
     function showUserLocation(position) {
       const userLatLng = [position.coords.latitude, position.coords.longitude];
       
-      // Add or move marker
-      if (userMarker) {
-        userMarker.setLatLng(userLatLng);
-      } else {
+      if (!userMarker) {
         userMarker = L.marker(userLatLng, {
           icon: L.icon({
             iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
             iconSize: [30, 30],
           })
-        })
-          .addTo(map)
-          .bindPopup("You are here")
-          .openPopup();
+        }).addTo(map).bindPopup("📍 You are here").openPopup();
+      } else {
+        userMarker.setLatLng(userLatLng);
       }
 
-      // Center map on user's location
       map.setView(userLatLng, 15);
     }
 
-    function showError(error) {
+    function showError() {
       alert("Konum alınamadı. Lütfen GPS ve izinleri açın.");
     }
 
-    // 📍 Watch user's location continuously
+    // Watch position continuously
     if (navigator.geolocation) {
       navigator.geolocation.watchPosition(showUserLocation, showError, {
         enableHighAccuracy: true,
@@ -98,22 +77,38 @@
         timeout: 10000
       });
     } else {
-      alert("Geolocation desteklenmiyor.");
+      alert("Tarayıcınız konum servisini desteklemiyor.");
     }
 
-    // 🚗 Route button
-    document.getElementById('routeBtn').addEventListener('click', () => {
+    // 📍 On map click, set destination & route
+    map.on('click', function (e) {
       if (!userMarker) {
-        alert("Konum henüz tespit edilmedi!");
+        alert("Önce konum tespit edilmeli!");
         return;
       }
-      const userLatLng = userMarker.getLatLng();
 
+      const destLatLng = e.latlng;
+
+      // Remove old destination marker
+      if (destMarker) map.removeLayer(destMarker);
+
+      // Add new destination marker
+      destMarker = L.marker(destLatLng, {
+        icon: L.icon({
+          iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+          iconSize: [30, 30],
+        })
+      }).addTo(map).bindPopup("🎯 Destination").openPopup();
+
+      // Remove old route
       if (routingControl) map.removeControl(routingControl);
+
+      // Add new route
+      const userLatLng = userMarker.getLatLng();
       routingControl = L.Routing.control({
         waypoints: [
           L.latLng(userLatLng.lat, userLatLng.lng),
-          L.latLng(destination[0], destination[1])
+          L.latLng(destLatLng.lat, destLatLng.lng)
         ],
         routeWhileDragging: false
       }).addTo(map);
