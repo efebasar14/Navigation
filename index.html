@@ -1,118 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Navigation App - Tap to Route</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-    #map {
-      height: 100%;
-      width: 100%;
-    }
-    #info {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(255, 255, 255, 0.9);
-      padding: 8px 16px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      z-index: 1000;
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Navigasyon Uygulaması</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+    <style>
+        body, html { height: 100%; margin: 0; padding: 0; }
+        #map { height: 100%; width: 100%; }
+        .info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 8px;
+            border-radius: 5px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+    </style>
 </head>
 <body>
-  <div id="info">🗺️ Tap anywhere to set destination</div>
-  <div id="map"></div>
 
-  <script>
-    // Initialize map
-    const map = L.map('map').setView([39.8657, 32.7339], 14);
+<div class="info">Navigasyon uygulaması demo</div>
+<div id="map"></div>
 
-    // Add OpenStreetMap tiles
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<!-- Leaflet Routing Machine JS -->
+<script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    // Harita oluştur
+    const map = L.map('map').setView([39.925, 32.866], 13); // Ankara varsayılan
+
+    // OpenStreetMap katmanı
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+        attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    let userMarker, destMarker, routingControl;
-
-    // Function to show user position
-    function showUserLocation(position) {
-      const userLatLng = [position.coords.latitude, position.coords.longitude];
-      
-      if (!userMarker) {
-        userMarker = L.marker(userLatLng, {
-          icon: L.icon({
-            iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-            iconSize: [30, 30],
-          })
-        }).addTo(map).bindPopup("📍 You are here").openPopup();
-      } else {
-        userMarker.setLatLng(userLatLng);
-      }
-
-      map.setView(userLatLng, 15);
-    }
-
-    function showError() {
-      alert("Konum alınamadı. Lütfen GPS ve izinleri açın.");
-    }
-
-    // Watch position continuously
+    // Konum izleme
     if (navigator.geolocation) {
-      navigator.geolocation.watchPosition(showUserLocation, showError, {
-        enableHighAccuracy: true,
-        maximumAge: 10000,
-        timeout: 10000
-      });
+        navigator.geolocation.getCurrentPosition((position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            // Kullanıcı marker
+            const userMarker = L.marker([lat, lng]).addTo(map)
+                .bindPopup("Sen buradasın").openPopup();
+
+            // Haritayı konuma getir
+            map.setView([lat, lng], 15);
+
+            // Rota çizimi (örnek olarak hedef koordinat)
+            const destination = [39.927, 32.870]; // Örnek hedef
+
+            L.Routing.control({
+                waypoints: [
+                    L.latLng(lat, lng),
+                    L.latLng(destination[0], destination[1])
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
+
+        }, (err) => {
+            alert("Konum alınamadı: " + err.message);
+        });
     } else {
-      alert("Tarayıcınız konum servisini desteklemiyor.");
+        alert("Tarayıcınız konum servisini desteklemiyor!");
     }
+</script>
 
-    // 📍 On map click, set destination & route
-    map.on('click', function (e) {
-      if (!userMarker) {
-        alert("Önce konum tespit edilmeli!");
-        return;
-      }
-
-      const destLatLng = e.latlng;
-
-      // Remove old destination marker
-      if (destMarker) map.removeLayer(destMarker);
-
-      // Add new destination marker
-      destMarker = L.marker(destLatLng, {
-        icon: L.icon({
-          iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-          iconSize: [30, 30],
-        })
-      }).addTo(map).bindPopup("🎯 Destination").openPopup();
-
-      // Remove old route
-      if (routingControl) map.removeControl(routingControl);
-
-      // Add new route
-      const userLatLng = userMarker.getLatLng();
-      routingControl = L.Routing.control({
-        waypoints: [
-          L.latLng(userLatLng.lat, userLatLng.lng),
-          L.latLng(destLatLng.lat, destLatLng.lng)
-        ],
-        routeWhileDragging: false
-      }).addTo(map);
-    });
-  </script>
 </body>
 </html>
