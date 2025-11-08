@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenStreetMap Navigasyon</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+
+    <!-- Özel Stil Dosyası -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="form-container">
+        <form id="route-form">
+            <input type="text" id="start" placeholder="Başlangıç adresi" />
+            <input type="text" id="end" placeholder="Bitiş adresi" />
+            <button type="button" onclick="calculateRoute()">Yol Tarifi Al</button>
+        </form>
+        <button type="button" onclick="useLiveLocation()">Canlı Konumu Kullan</button>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <!-- Özel JS Dosyası -->
+    <script src="script.js"></script>
+</body>
+</html>
