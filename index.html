@@ -1,35 +1,123 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenStreetMap Navigasyon</title>
-
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
-
-    <!-- Özel Stil Dosyası -->
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Navigation App</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    #info {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      padding: 8px 16px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+    }
+    button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #0078ff;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-    <div id="form-container">
-        <form id="route-form">
-            <input type="text" id="start" placeholder="Başlangıç adresi" />
-            <input type="text" id="end" placeholder="Bitiş adresi" />
-            <button type="button" onclick="calculateRoute()">Yol Tarifi Al</button>
-        </form>
-        <button type="button" onclick="useLiveLocation()">Canlı Konumu Kullan</button>
-    </div>
+  <div id="info">
+    <button id="routeBtn">Route to Hacettepe</button>
+  </div>
+  <div id="map"></div>
 
-    <div id="map"></div>
+  <script>
+    // Initialize map
+    const map = L.map('map').setView([39.8657, 32.7339], 14);
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
-    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+    // Add OpenStreetMap base layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-    <!-- Özel JS Dosyası -->
-    <script src="script.js"></script>
+    // Destination: Hacettepe University Beytepe
+    const destination = [39.8657, 32.7339];
+    const destMarker = L.marker(destination)
+      .addTo(map)
+      .bindPopup("Destination: Hacettepe University");
+
+    let routingControl;
+    let userMarker;
+
+    // ✅ Automatically show user's location on map when loaded
+    function showUserLocation(position) {
+      const userLatLng = [position.coords.latitude, position.coords.longitude];
+      
+      // Add or move marker
+      if (userMarker) {
+        userMarker.setLatLng(userLatLng);
+      } else {
+        userMarker = L.marker(userLatLng, {
+          icon: L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
+            iconSize: [30, 30],
+          })
+        })
+          .addTo(map)
+          .bindPopup("You are here")
+          .openPopup();
+      }
+
+      // Center map on user's location
+      map.setView(userLatLng, 15);
+    }
+
+    function showError(error) {
+      alert("Konum alınamadı. Lütfen GPS ve izinleri açın.");
+    }
+
+    // 📍 Watch user's location continuously
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(showUserLocation, showError, {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 10000
+      });
+    } else {
+      alert("Geolocation desteklenmiyor.");
+    }
+
+    // 🚗 Route button
+    document.getElementById('routeBtn').addEventListener('click', () => {
+      if (!userMarker) {
+        alert("Konum henüz tespit edilmedi!");
+        return;
+      }
+      const userLatLng = userMarker.getLatLng();
+
+      if (routingControl) map.removeControl(routingControl);
+      routingControl = L.Routing.control({
+        waypoints: [
+          L.latLng(userLatLng.lat, userLatLng.lng),
+          L.latLng(destination[0], destination[1])
+        ],
+        routeWhileDragging: false
+      }).addTo(map);
+    });
+  </script>
 </body>
 </html>
